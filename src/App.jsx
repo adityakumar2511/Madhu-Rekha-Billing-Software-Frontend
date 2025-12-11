@@ -7,21 +7,19 @@ import Dashboard from "./pages/Dashboard";
 import EditBill from "./pages/EditBill.jsx";
 import InvoicePrintPage from "./pages/InvoicePrintPage.jsx";
 import ReceiptPrintPage from "./pages/ReceiptPrintPage.jsx";
+import Profile from "./pages/Profile.jsx"; // added
 
 export default function App() {
   const location = useLocation();
 
-  // /print/... routes ke liye alag layout (no sidebar)
+  // /print/... routes use a minimal layout (no sidebar)
   const isPrintRoute = location.pathname.startsWith("/print/");
 
   if (isPrintRoute) {
     return (
       <Routes>
         <Route path="/print/invoice/:id" element={<InvoicePrintPage />} />
-        <Route
-          path="/print/receipt/:paymentId"
-          element={<ReceiptPrintPage />}
-        />
+        <Route path="/print/receipt/:paymentId" element={<ReceiptPrintPage />} />
       </Routes>
     );
   }
@@ -41,9 +39,7 @@ export default function App() {
             to="/dashboard"
             className={({ isActive }) =>
               `block px-3 py-2 rounded-md ${
-                isActive
-                  ? "bg-slate-900 text-white"
-                  : "text-slate-700 hover:bg-slate-100"
+                isActive ? "bg-slate-900 text-white" : "text-slate-700 hover:bg-slate-100"
               }`
             }
           >
@@ -54,9 +50,7 @@ export default function App() {
             to="/new-bill"
             className={({ isActive }) =>
               `block px-3 py-2 rounded-md ${
-                isActive
-                  ? "bg-slate-900 text-white"
-                  : "text-slate-700 hover:bg-slate-100"
+                isActive ? "bg-slate-900 text-white" : "text-slate-700 hover:bg-slate-100"
               }`
             }
           >
@@ -67,13 +61,23 @@ export default function App() {
             to="/bills"
             className={({ isActive }) =>
               `block px-3 py-2 rounded-md ${
-                isActive
-                  ? "bg-slate-900 text-white"
-                  : "text-slate-700 hover:bg-slate-100"
+                isActive ? "bg-slate-900 text-white" : "text-slate-700 hover:bg-slate-100"
               }`
             }
           >
             All Bills
+          </NavLink>
+
+          {/* Profile / Clinic settings */}
+          <NavLink
+            to="/profile"
+            className={({ isActive }) =>
+              `block px-3 py-2 rounded-md ${
+                isActive ? "bg-slate-900 text-white" : "text-slate-700 hover:bg-slate-100"
+              }`
+            }
+          >
+            Clinic Profile
           </NavLink>
         </nav>
       </aside>
@@ -89,6 +93,8 @@ export default function App() {
           <Route path="/bills/:id" element={<BillDetail />} />
           <Route path="/bills/:id/edit" element={<EditBill />} />
 
+          {/* Profile page */}
+          <Route path="/profile" element={<Profile />} />
         </Routes>
       </main>
     </div>
