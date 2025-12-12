@@ -19,9 +19,13 @@ export default function EditBill() {
     age: "",
     date: "",
     remarks: "",
+    // keep payment fields out — EditBill is "No Payment Change"
   });
 
-  const [services, setServices] = useState([]);
+  // services use same shape as CreateBill: { id, description, qty, rate }
+  const [services, setServices] = useState([
+    { id: rowId++, description: "", qty: "1", rate: "0" },
+  ]);
 
   useEffect(() => {
     const load = async () => {
@@ -41,15 +45,19 @@ export default function EditBill() {
             ? data.services
             : data.items || [];
 
-        setServices(
-          src.map((s) => ({
-            id: rowId++,
-            item: s.item || s.description || "",
-            details: s.details || "",
-            qty: String(s.qty ?? s.quantity ?? 1),
-            rate: String(s.rate ?? s.price ?? 0),
-          }))
-        );
+        // normalize incoming items to { description, qty, rate }
+        const normalized =
+          src.length > 0
+            ? src.map((s) => ({
+                id: rowId++,
+                description: s.description ?? s.item ?? s.description ?? "",
+                // support several possible field names, fallbacks to sensible defaults
+                qty: String(s.qty ?? s.quantity ?? 1),
+                rate: String(s.rate ?? s.price ?? 0),
+              }))
+            : [{ id: rowId++, description: "", qty: "1", rate: "0" }];
+
+        setServices(normalized);
       } catch (e) {
         setError(e.message);
       } finally {
@@ -67,25 +75,22 @@ export default function EditBill() {
 
   const handleServiceChange = (rowIdLocal, field, value) => {
     setServices((prev) =>
-      prev.map((row) =>
-        row.id === rowIdLocal ? { ...row, [field]: value } : row
-      )
+      prev.map((row) => (row.id === rowIdLocal ? { ...row, [field]: value } : row))
     );
   };
 
   const addServiceRow = () => {
     setServices((prev) => [
       ...prev,
-      { id: rowId++, item: "", details: "", qty: "1", rate: "0" },
+      { id: rowId++, description: "", qty: "1", rate: "0" },
     ]);
   };
 
   const removeServiceRow = (rowIdLocal) => {
-    setServices((prev) =>
-      prev.length === 1 ? prev : prev.filter((row) => row.id !== rowIdLocal)
-    );
+    setServices((prev) => (prev.length === 1 ? prev : prev.filter((r) => r.id !== rowIdLocal)));
   };
 
+  // ---------- NUMERIC DERIVED VALUES ----------
   const servicesWithAmount = services.map((s) => {
     const qty = Number(s.qty) || 0;
     const rate = Number(s.rate) || 0;
@@ -93,17 +98,13 @@ export default function EditBill() {
     return { ...s, qty, rate, lineAmount };
   });
 
-  const subtotal = servicesWithAmount.reduce(
-    (sum, s) => sum + s.lineAmount,
-    0
-  );
+  const subtotal = servicesWithAmount.reduce((sum, s) => sum + s.lineAmount, 0);
   const total = subtotal;
   const formattedTotal = total.toFixed(2);
 
   const handleSave = async () => {
-    const cleanedServices = servicesWithAmount.map(
-      ({ id, lineAmount, ...rest }) => rest
-    );
+    // clean internal-only fields before sending
+    const cleanedServices = servicesWithAmount.map(({ id, lineAmount, ...rest }) => rest);
 
     const payload = {
       patientName: form.patientName,
@@ -113,7 +114,7 @@ export default function EditBill() {
       date: form.date,
       remarks: form.remarks,
       services: cleanedServices,
-      // adjust optional; if you want to support, add here
+      total: formattedTotal,
     };
 
     try {
@@ -130,8 +131,7 @@ export default function EditBill() {
   };
 
   if (loading) return <div className="text-sm">Loading bill...</div>;
-  if (error)
-    return <div className="text-sm text-red-600">Error: {error}</div>;
+  if (error) return <div className="text-sm text-red-600">Error: {error}</div>;
 
   return (
     <div className="space-y-6">
@@ -215,92 +215,119 @@ export default function EditBill() {
         </div>
       </div>
 
-      {/* Services section (same as CreateBill) */}
+      {/* Services section now matches CreateBill's "Treatment Breakup Details" */}
       <div className="bg-white rounded-lg shadow-sm p-4 space-y-3">
         <div className="flex items-center justify-between mb-1">
-          <h4 className="text-sm font-semibold">Service Details</h4>
+          <h4 className="text-sm font-semibold">Treatment Breakup Details</h4>
           <button
             type="button"
             onClick={addServiceRow}
             className="text-xs px-3 py-1 rounded-md border border-slate-300 hover:bg-slate-50"
           >
-            + Add Service
+            + Add Item
           </button>
         </div>
 
+        {/* Header (desktop) */}
         <div className="hidden md:grid grid-cols-12 gap-3 text-[11px] font-semibold text-slate-500 border-b border-slate-200 pb-1">
-          <div className="col-span-4">Service / Item</div>
-          <div className="col-span-3">Description</div>
-          <div className="col-span-2 text-right">Qty</div>
-          <div className="col-span-2 text-right">Rate</div>
-          <div className="col-span-1 text-right">Amount</div>
+          <div className="col-span-1">Sr.</div>
+          <div className="col-span-6">Description of Items/Service</div>
+          <div className="col-span-1">Qty</div>
+          <div className="col-span-2">Rate</div>
+          <div className="col-span-2">Amount</div>
         </div>
 
+        {/* Rows (desktop) */}
         <div className="space-y-2">
           {servicesWithAmount.map((row, idx) => (
-            <div
-              key={row.id}
-              className="relative grid grid-cols-12 gap-3 items-center pr-6"
-            >
-              <div className="col-span-12 md:col-span-4">
+            <div key={row.id} className="relative grid grid-cols-12 gap-3 items-center pr-6">
+              <div className="col-span-12 md:col-span-1 text-sm md:text-[13px] flex items-center">{idx + 1}</div>
+
+              <div className="col-span-12 md:col-span-6">
                 <input
                   type="text"
-                  value={row.item}
-                  onChange={(e) =>
-                    handleServiceChange(row.id, "item", e.target.value)
-                  }
+                  value={row.description}
+                  onChange={(e) => handleServiceChange(row.id, "description", e.target.value)}
                   className="w-full border border-slate-300 rounded-md px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-slate-500"
-                  placeholder={`Service ${idx + 1}`}
+                  placeholder={`Description ${idx + 1}`}
                 />
               </div>
-              <div className="col-span-12 md:col-span-3">
-                <input
-                  type="text"
-                  value={row.details}
-                  onChange={(e) =>
-                    handleServiceChange(row.id, "details", e.target.value)
-                  }
-                  className="w-full border border-slate-300 rounded-md px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-slate-500"
-                  placeholder="Description / notes (optional)"
-                />
-              </div>
-              <div className="col-span-4 md:col-span-2">
+
+              <div className="col-span-4 md:col-span-1">
                 <input
                   type="number"
                   value={row.qty}
-                  onChange={(e) =>
-                    handleServiceChange(row.id, "qty", e.target.value)
-                  }
+                  onChange={(e) => handleServiceChange(row.id, "qty", e.target.value)}
                   className="w-full border border-slate-300 rounded-md px-2 py-1.5 text-sm text-right focus:outline-none focus:ring-1 focus:ring-slate-500"
                   min="0"
                 />
               </div>
+
               <div className="col-span-4 md:col-span-2">
                 <input
                   type="number"
                   value={row.rate}
-                  onChange={(e) =>
-                    handleServiceChange(row.id, "rate", e.target.value)
-                  }
+                  onChange={(e) => handleServiceChange(row.id, "rate", e.target.value)}
                   className="w-full border border-slate-300 rounded-md px-2 py-1.5 text-sm text-right focus:outline-none focus:ring-1 focus:ring-slate-500"
                   min="0"
                   step="0.01"
                 />
               </div>
-              <div className="col-span-4 md:col-span-1">
+
+              <div className="col-span-4 md:col-span-2">
                 <div className="w-full border border-slate-200 rounded-md px-2 py-1.5 text-sm text-right bg-slate-50">
                   ₹ {row.lineAmount.toFixed(2)}
                 </div>
               </div>
 
+              {/* Delete button - absolute right */}
               <button
                 type="button"
                 onClick={() => removeServiceRow(row.id)}
                 className="absolute right-0 top-1/2 -translate-y-1/2 text-xs text-red-500 hover:text-red-600 disabled:text-slate-300"
                 disabled={services.length === 1}
+                title={services.length === 1 ? "At least one row required" : "Remove item"}
               >
                 ✕
               </button>
+            </div>
+          ))}
+        </div>
+
+        {/* Mobile-friendly rows */}
+        <div className="md:hidden space-y-2">
+          {servicesWithAmount.map((row, idx) => (
+            <div key={`m-${row.id}`} className="border border-slate-100 rounded-md p-2">
+              <div className="flex justify-between items-center text-sm mb-2">
+                <div>Sr. {idx + 1}</div>
+                <div className="text-right font-semibold">₹ {row.lineAmount.toFixed(2)}</div>
+              </div>
+              <div className="mb-2">
+                <input
+                  type="text"
+                  value={row.description}
+                  onChange={(e) => handleServiceChange(row.id, "description", e.target.value)}
+                  className="w-full border border-slate-300 rounded-md px-2 py-1 text-sm"
+                  placeholder={`Description ${idx + 1}`}
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <input
+                  type="number"
+                  value={row.qty}
+                  onChange={(e) => handleServiceChange(row.id, "qty", e.target.value)}
+                  className="w-full border border-slate-300 rounded-md px-2 py-1 text-sm text-right"
+                  min="0"
+                />
+                <input
+                  type="number"
+                  value={row.rate}
+                  onChange={(e) => handleServiceChange(row.id, "rate", e.target.value)}
+                  className="w-full border border-slate-300 rounded-md px-2 py-1 text-sm text-right"
+                  min="0"
+                  step="0.01"
+                />
+              </div>
             </div>
           ))}
         </div>
@@ -323,9 +350,7 @@ export default function EditBill() {
           </div>
           <div className="flex flex-col items-end justify-center">
             <span className="text-xs text-slate-500">Bill Total</span>
-            <span className="text-base font-semibold">
-              ₹ {formattedTotal}
-            </span>
+            <span className="text-base font-semibold">₹ {formattedTotal}</span>
           </div>
         </div>
 
