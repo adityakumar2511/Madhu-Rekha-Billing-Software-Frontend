@@ -85,7 +85,7 @@ export default function BillDetail() {
         </div> */}
         <div className="flex flex-wrap gap-2">
           {/* Main invoice PDF */}
-          <button
+          {/* <button
             type="button"
             onClick={() =>
               window.open(
@@ -96,7 +96,7 @@ export default function BillDetail() {
             className="px-3 py-1.5 text-xs rounded border border-slate-300 hover:bg-slate-50"
           >
             Download Invoice
-          </button>
+          </button> */}
 
           <button
             type="button"
