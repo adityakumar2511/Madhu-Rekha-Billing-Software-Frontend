@@ -241,7 +241,7 @@ export default function BillDetail() {
                     className="border-b border-slate-100 last:border-0"
                   >
                     <td className="px-2 py-1">
-                      {p.date} {p.time ? p.time : ""}
+                      {p.date}
                     </td>
                     <td className="px-2 py-1 text-right">
                       ₹ {Number(p.amount).toFixed(2)}
@@ -251,7 +251,7 @@ export default function BillDetail() {
                     <td className="px-2 py-1">{p.drawnOn || "-"}</td>
                     <td className="px-2 py-1">{p.drawnAs || "-"}</td>
                     <td className="px-2 py-1">{p.receiptNo || "-"}</td>
-                    <td className="px-2 py-1 text-center">
+                    <td className="px-2 py-1 text-center space-x-1">
                       <button
                         type="button"
                         onClick={() =>
@@ -263,6 +263,21 @@ export default function BillDetail() {
                         className="px-2 py-0.5 text-[11px] rounded border border-slate-300 hover:bg-slate-50"
                       >
                         Download Receipt
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const ok = window.confirm(
+                            "Are you sure you want to edit this payment receipt?"
+                          );
+                          if (ok) {
+                            window.location.href = `/payments/${p.id}/edit`;
+                          }
+                        }}
+                        className="px-2 py-0.5 text-[11px] rounded border border-amber-400 text-amber-700 hover:bg-amber-50"
+                      >
+                        Edit Receipt
                       </button>
                     </td>
                   </tr>
@@ -300,7 +315,7 @@ export default function BillDetail() {
                     className="border-b border-slate-100 last:border-0"
                   >
                     <td className="px-2 py-1">
-                      {r.date} {r.time ? r.time : ""}
+                      {r.date}
                     </td>
                     <td className="px-2 py-1 text-right">
                       ₹ {Number(r.amount).toFixed(2)}
@@ -310,7 +325,7 @@ export default function BillDetail() {
                     <td className="px-2 py-1">{r.drawnOn || "-"}</td>
                     <td className="px-2 py-1">{r.drawnAs || "-"}</td>
                     <td className="px-2 py-1">{r.refundNo || "-"}</td>
-                    <td className="px-2 py-1 text-center">
+                    <td className="px-2 py-1 text-center space-x-1">
                       <button
                         type="button"
                         onClick={() =>
@@ -321,7 +336,22 @@ export default function BillDetail() {
                         }
                         className="px-2 py-0.5 text-[11px] rounded border border-slate-300 hover:bg-slate-50"
                       >
-                        Download Refund
+                        Download Receipt
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const ok = window.confirm(
+                            "Are you sure you want to edit this refund receipt?"
+                          );
+                          if (ok) {
+                            window.location.href = `/refunds/${r.id}/edit`;
+                          }
+                        }}
+                        className="px-2 py-0.5 text-[11px] rounded border border-amber-400 text-amber-700 hover:bg-amber-50"
+                      >
+                        Edit Receipt
                       </button>
                     </td>
                   </tr>
@@ -587,6 +617,7 @@ function PendingPaymentForm({ billId, pending, onSuccess }) {
   const [form, setForm] = useState({
     amount: pending,
     mode: "Cash",
+    paymentDate: "",
     referenceNo: "",
     chequeDate: "",
     chequeNumber: "",
@@ -616,6 +647,7 @@ function PendingPaymentForm({ billId, pending, onSuccess }) {
         body: JSON.stringify({
           amount: Number(form.amount),
           mode: form.mode,
+          date: form.paymentDate,
           referenceNo: form.referenceNo,
           chequeDate: form.chequeDate,
           chequeNumber: form.chequeNumber,
@@ -652,6 +684,19 @@ function PendingPaymentForm({ billId, pending, onSuccess }) {
           value={form.amount}
           onChange={handleChange}
           className="w-28 border border-slate-300 rounded-md px-2 py-1 text-right focus:outline-none focus:ring-1 focus:ring-slate-500"
+        />
+      </div>
+      <div>
+        <label className="block text-slate-600 mb-1 text-[11px]">
+          Payment Date
+        </label>
+        <input
+          type="date"
+          name="paymentDate"
+          value={form.paymentDate}
+          onChange={handleChange}
+          className="w-full border border-slate-300 rounded-md px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-slate-500"
+          required
         />
       </div>
 
@@ -702,6 +747,7 @@ function RefundForm({ billId, maxRefund, onSuccess }) {
   const [form, setForm] = useState({
     amount: maxRefund,
     mode: "Cash",
+    refundDate: "",
     referenceNo: "",
     chequeDate: "",
     chequeNumber: "",
@@ -741,6 +787,7 @@ function RefundForm({ billId, maxRefund, onSuccess }) {
         body: JSON.stringify({
           amount: numericAmount,
           mode: form.mode,
+          date: form.refundDate,
           referenceNo: form.referenceNo,
           chequeDate: form.chequeDate,
           chequeNumber: form.chequeNumber,
@@ -777,6 +824,19 @@ function RefundForm({ billId, maxRefund, onSuccess }) {
           value={form.amount}
           onChange={handleChange}
           className="w-28 border border-slate-300 rounded-md px-2 py-1 text-right focus:outline-none focus:ring-1 focus:ring-slate-500"
+        />
+      </div>
+      <div>
+        <label className="block text-slate-600 mb-1 text-[11px]">
+          Refund Date
+        </label>
+        <input
+          type="date"
+          name="refundDate"
+          value={form.refundDate}
+          onChange={handleChange}
+          className="w-full border border-slate-300 rounded-md px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-slate-500"
+          required
         />
       </div>
 

@@ -5,6 +5,8 @@ import BillsList from "./pages/BillsList.jsx";
 import BillDetail from "./pages/BillDetail.jsx";
 import Dashboard from "./pages/Dashboard";
 import EditBill from "./pages/EditBill.jsx";
+import EditPayment from "./pages/EditPayment.jsx";
+import EditRefund from "./pages/EditRefund.jsx";
 import InvoicePrintPage from "./pages/InvoicePrintPage.jsx";
 import ReceiptPrintPage from "./pages/ReceiptPrintPage.jsx";
 import Profile from "./pages/Profile.jsx"; // added
@@ -19,7 +21,10 @@ export default function App() {
     return (
       <Routes>
         <Route path="/print/invoice/:id" element={<InvoicePrintPage />} />
-        <Route path="/print/receipt/:paymentId" element={<ReceiptPrintPage />} />
+        <Route
+          path="/print/receipt/:paymentId"
+          element={<ReceiptPrintPage />}
+        />
       </Routes>
     );
   }
@@ -39,7 +44,9 @@ export default function App() {
             to="/dashboard"
             className={({ isActive }) =>
               `block px-3 py-2 rounded-md ${
-                isActive ? "bg-slate-900 text-white" : "text-slate-700 hover:bg-slate-100"
+                isActive
+                  ? "bg-slate-900 text-white"
+                  : "text-slate-700 hover:bg-slate-100"
               }`
             }
           >
@@ -50,7 +57,9 @@ export default function App() {
             to="/new-bill"
             className={({ isActive }) =>
               `block px-3 py-2 rounded-md ${
-                isActive ? "bg-slate-900 text-white" : "text-slate-700 hover:bg-slate-100"
+                isActive
+                  ? "bg-slate-900 text-white"
+                  : "text-slate-700 hover:bg-slate-100"
               }`
             }
           >
@@ -61,7 +70,9 @@ export default function App() {
             to="/bills"
             className={({ isActive }) =>
               `block px-3 py-2 rounded-md ${
-                isActive ? "bg-slate-900 text-white" : "text-slate-700 hover:bg-slate-100"
+                isActive
+                  ? "bg-slate-900 text-white"
+                  : "text-slate-700 hover:bg-slate-100"
               }`
             }
           >
@@ -73,7 +84,9 @@ export default function App() {
             to="/profile"
             className={({ isActive }) =>
               `block px-3 py-2 rounded-md ${
-                isActive ? "bg-slate-900 text-white" : "text-slate-700 hover:bg-slate-100"
+                isActive
+                  ? "bg-slate-900 text-white"
+                  : "text-slate-700 hover:bg-slate-100"
               }`
             }
           >
@@ -92,6 +105,8 @@ export default function App() {
           <Route path="/bills" element={<BillsList />} />
           <Route path="/bills/:id" element={<BillDetail />} />
           <Route path="/bills/:id/edit" element={<EditBill />} />
+          <Route path="/payments/:id/edit" element={<EditPayment />} />
+          <Route path="/refunds/:id/edit" element={<EditRefund />} />
 
           {/* Profile page */}
           <Route path="/profile" element={<Profile />} />

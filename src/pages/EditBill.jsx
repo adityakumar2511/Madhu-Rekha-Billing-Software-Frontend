@@ -4,6 +4,17 @@ import { useNavigate, useParams } from "react-router-dom";
 import { apiFetch } from "../lib/api";
 
 let rowId = 1;
+function normalizeDateForInput(d) {
+  if (!d) return "";
+  // already yyyy-mm-dd
+  if (/^\d{4}-\d{2}-\d{2}$/.test(d)) return d;
+
+  // convert dd.mm.yyyy → yyyy-mm-dd (safety)
+  const m = d.match(/^(\d{2})\.(\d{2})\.(\d{4})$/);
+  if (m) return `${m[3]}-${m[2]}-${m[1]}`;
+
+  return "";
+}
 
 export default function EditBill() {
   const { id } = useParams(); // billId
@@ -36,7 +47,7 @@ export default function EditBill() {
           sex: data.sex || "",
           address: data.address || "",
           age: data.age != null ? String(data.age) : "",
-          date: data.date || new Date().toISOString().slice(0, 10),
+          date: data.date || "",
           remarks: data.remarks || "",
         });
 
@@ -153,7 +164,7 @@ export default function EditBill() {
               className="w-full border border-slate-300 rounded-md px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-slate-500"
             />
           </div>
-          <div>
+          {/* <div>
             <label className="block text-xs font-medium text-slate-600 mb-1">
               Age
             </label>
@@ -164,7 +175,7 @@ export default function EditBill() {
               onChange={handleFormChange}
               className="w-full border border-slate-300 rounded-md px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-slate-500"
             />
-          </div>
+          </div> */}
           <div>
             <label className="block text-xs font-medium text-slate-600 mb-1">
               Date
@@ -192,7 +203,7 @@ export default function EditBill() {
               className="w-full border border-slate-300 rounded-md px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-slate-500"
             />
           </div>
-          <div>
+          {/* <div>
             <label className="block text-xs font-medium text-slate-600 mb-1">
               Sex
             </label>
@@ -211,12 +222,13 @@ export default function EditBill() {
                 </label>
               ))}
             </div>
-          </div>
+          </div> */}
         </div>
       </div>
 
       {/* Services section now matches CreateBill's "Treatment Breakup Details" */}
       <div className="bg-white rounded-lg shadow-sm p-4 space-y-3">
+        <h3 className="text-lg font-semibold">Procedure Done</h3>
         <div className="flex items-center justify-between mb-1">
           <h4 className="text-sm font-semibold">Treatment Breakup Details</h4>
           <button
