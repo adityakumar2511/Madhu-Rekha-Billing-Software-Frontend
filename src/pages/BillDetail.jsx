@@ -98,7 +98,7 @@ export default function BillDetail() {
             Download Invoice
           </button> */}
 
-          <button
+          {/* <button
             type="button"
             onClick={() =>
               window.open(
@@ -109,7 +109,7 @@ export default function BillDetail() {
             className="px-3 py-1.5 text-xs rounded border border-slate-300 hover:bg-slate-50"
           >
             Download Summary
-          </button>
+          </button> */}
 
           {/* 🔵 NEW BUTTON — FULL PAYMENT PDF */}
           {isPaid && (
@@ -123,7 +123,7 @@ export default function BillDetail() {
               }
               className="px-3 py-1.5 text-xs rounded border border-blue-400 text-blue-700 hover:bg-blue-50"
             >
-              Full Payment PDF
+              Download Invoice
             </button>
           )}
         </div>
