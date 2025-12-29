@@ -3,6 +3,47 @@ import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { apiFetch, API_BASE } from "../lib/api";
 
+// Helper function to format any date to DD.MM.YYYY
+function formatToDDMMYYYY(dateValue) {
+  if (!dateValue) return "-";
+
+  // Already in correct format
+  if (/^\d{2}\.\d{2}\.\d{4}$/.test(dateValue)) {
+    return dateValue;
+  }
+
+  // Most common Firestore string format YYYY-MM-DD
+  if (/^\d{4}-\d{2}-\d{2}$/.test(dateValue)) {
+    const [yyyy, mm, dd] = dateValue.split("-");
+    return `${dd}.${mm}.${yyyy}`;
+  }
+
+  // ISO string with time (e.g. 2025-12-18T00:00:00Z)
+  if (typeof dateValue === "string" && dateValue.includes("T")) {
+    const datePart = dateValue.split("T")[0];
+    if (/^\d{4}-\d{2}-\d{2}$/.test(datePart)) {
+      const [yyyy, mm, dd] = datePart.split("-");
+      return `${dd}.${mm}.${yyyy}`;
+    }
+  }
+
+  // Try parsing as Date object (last chance)
+  try {
+    const d = new Date(dateValue);
+    if (!isNaN(d.getTime())) {
+      const dd = String(d.getDate()).padStart(2, "0");
+      const mm = String(d.getMonth() + 1).padStart(2, "0");
+      const yyyy = d.getFullYear();
+      return `${dd}.${mm}.${yyyy}`;
+    }
+  } catch (e) {
+    // silent fail
+  }
+
+  // Fallback: show whatever came
+  return String(dateValue);
+}
+
 export default function BillDetail() {
   const { id } = useParams();
   const [bill, setBill] = useState(null);
@@ -36,8 +77,8 @@ export default function BillDetail() {
   if (error) return <div className="text-sm text-red-600">{error}</div>;
   if (!bill) return <div className="text-sm">Bill not found</div>;
 
-  const isPaid = bill.balance <= 0;
-  const hasNetPaid = Number(bill.paid || 0) > 0;
+  const isPaid = Number(bill.balance ?? 0) <= 0;
+  const hasNetPaid = Number(bill.paid ?? 0) > 0;
 
   return (
     <div className="space-y-4">
@@ -55,63 +96,7 @@ export default function BillDetail() {
           </span>
         </h3>
 
-        {/* <div className="flex flex-wrap gap-2">
-          
-          <button
-            type="button"
-            onClick={() =>
-              window.open(
-                `${API_BASE}/api/bills/${bill.id}/invoice-html-pdf`,
-                "_blank"
-              )
-            }
-            className="px-3 py-1.5 text-xs rounded border border-slate-300 hover:bg-slate-50"
-          >
-            Download Invoice
-          </button>
-
-          <button
-            type="button"
-            onClick={() =>
-              window.open(
-                `${API_BASE}/api/bills/${bill.id}/summary-pdf`,
-                "_blank"
-              )
-            }
-            className="px-3 py-1.5 text-xs rounded border border-slate-300 hover:bg-slate-50"
-          >
-            Download Summary
-          </button>
-        </div> */}
         <div className="flex flex-wrap gap-2">
-          {/* Main invoice PDF */}
-          {/* <button
-            type="button"
-            onClick={() =>
-              window.open(
-                `${API_BASE}/api/bills/${bill.id}/invoice-html-pdf`,
-                "_blank"
-              )
-            }
-            className="px-3 py-1.5 text-xs rounded border border-slate-300 hover:bg-slate-50"
-          >
-            Download Invoice
-          </button> */}
-
-          {/* <button
-            type="button"
-            onClick={() =>
-              window.open(
-                `${API_BASE}/api/bills/${bill.id}/summary-pdf`,
-                "_blank"
-              )
-            }
-            className="px-3 py-1.5 text-xs rounded border border-slate-300 hover:bg-slate-50"
-          >
-            Download Summary
-          </button> */}
-
-          {/* 🔵 NEW BUTTON — FULL PAYMENT PDF */}
           {isPaid && (
             <button
               type="button"
@@ -134,7 +119,9 @@ export default function BillDetail() {
         <div className="bg-white rounded-lg shadow-sm p-4 text-sm">
           <div className="text-xs text-slate-500 mb-1">Patient</div>
           <div className="font-semibold">{bill.patientName}</div>
-          <div className="text-xs text-slate-500 mt-2">Date: {bill.date}</div>
+          <div className="text-xs text-slate-500 mt-2">
+            Date: {formatToDDMMYYYY(bill.date)}
+          </div>
         </div>
 
         <div className="bg-white rounded-lg shadow-sm p-4 text-sm">
@@ -213,6 +200,209 @@ export default function BillDetail() {
       </div>
 
       {/* Payment history */}
+      {/* <div className="bg-white rounded-lg shadow-sm p-4 text-sm">
+        <h4 className="text-sm font-semibold mb-2">Payment History</h4>
+        {(bill.payments?.length ?? 0) === 0 ? (
+          <div className="text-xs text-slate-500">No payments recorded yet.</div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="min-w-full text-xs">
+              <thead className="bg-slate-50 border-b border-slate-200">
+                <tr>
+                  <th className="px-2 py-1 text-left">Date</th>
+                  <th className="px-2 py-1 text-right">Amount</th>
+                  <th className="px-2 py-1 text-left">Mode</th>
+                  <th className="px-2 py-1 text-left">Cheque / UPI Date</th>
+                  <th className="px-2 py-1 text-left">Cheque No. / UPI ID</th>
+                  <th className="px-2 py-1 text-left">Bank</th>
+                  <th className="px-2 py-1 text-left">Ref No.</th>
+                  <th className="px-2 py-1 text-left">Receipt No.</th>
+                  <th className="px-2 py-1 text-center">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {(bill.payments ?? []).map((p) => {
+
+                  // Inside .map((p) => { ... })   for payments
+const isCheque = p.mode === "Cheque";
+const isUPI    = p.mode === "UPI";
+const isBank   = p.mode === "BankTransfer";
+
+// सबसे पहले date को priority से ढूंढो
+const chequeUpiDate = 
+  isCheque ? (p.chequeDate || p.cheque_date || p.date || "-") :
+  isUPI    ? (p.upiDate    || p.upi_date    || p.date || "-") :
+  isBank   ? (p.transferDate || p.transfer_date || p.date || "-") :
+  "-";
+
+// Cheque No / UPI ID / Ref
+const chequeUpiRef = 
+  isCheque ? (p.chequeNumber || p.cheque_no || p.chequeNum || "-") :
+  isUPI    ? (p.upiId       || p.upi_id     || p.transactionId || p.referenceNo || "-") :
+  isBank   ? (p.referenceNo || p.refNo      || p.transaction_id || "-") :
+  "-";
+
+// Bank / Drawn on
+const bank = 
+  (isCheque || isBank) 
+    ? (p.bankName || p.bank || p.drawnOn || p.bank_name || "-")
+    : isUPI 
+      ? (p.drawnOn || p.platform || p.upiPlatform || "-")
+      : "-";
+
+                  return (
+                    <tr
+                      key={p.id}
+                      className="border-b border-slate-100 last:border-0"
+                    >
+                      <td className="px-2 py-1">{formatToDDMMYYYY(p.date)}</td>
+                      <td className="px-2 py-1 text-right">
+                        ₹ {Number(p.amount).toFixed(2)}
+                      </td>
+                      <td className="px-2 py-1">{p.mode}</td>
+                      <td className="px-2 py-1">
+                        {formatToDDMMYYYY(chequeUpiDate) || "-"}
+                      </td>
+                      <td className="px-2 py-1">{chequeUpiRef || "-"}</td>
+                      <td className="px-2 py-1">{bank || "-"}</td>
+                      <td className="px-2 py-1">{p.referenceNo || "-"}</td>
+                      <td className="px-2 py-1">{p.receiptNo || "-"}</td>
+                      <td className="px-2 py-1 text-center space-x-1">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            window.open(
+                              `${API_BASE}/api/payments/${p.id}/receipt-html-pdf`,
+                              "_blank"
+                            )
+                          }
+                          className="px-2 py-0.5 text-[11px] rounded border border-slate-300 hover:bg-slate-50"
+                        >
+                          Download
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const ok = window.confirm(
+                              "Are you sure you want to edit this payment receipt?"
+                            );
+                            if (ok) {
+                              window.location.href = `/payments/${p.id}/edit`;
+                            }
+                          }}
+                          className="px-2 py-0.5 text-[11px] rounded border border-amber-400 text-amber-700 hover:bg-amber-50"
+                        >
+                          Edit
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      
+      <div className="bg-white rounded-lg shadow-sm p-4 text-sm">
+        <h4 className="text-sm font-semibold mb-2">Refund History</h4>
+        {(bill.refunds?.length ?? 0) === 0 ? (
+          <div className="text-xs text-slate-500">No refunds issued yet.</div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="min-w-full text-xs">
+              <thead className="bg-slate-50 border-b border-slate-200">
+                <tr>
+                  <th className="px-2 py-1 text-left">Date</th>
+                  <th className="px-2 py-1 text-right">Amount</th>
+                  <th className="px-2 py-1 text-left">Mode</th>
+                  <th className="px-2 py-1 text-left">Cheque / UPI Date</th>
+                  <th className="px-2 py-1 text-left">Cheque No. / UPI ID</th>
+                  <th className="px-2 py-1 text-left">Bank</th>
+                  <th className="px-2 py-1 text-left">Ref No.</th>
+                  <th className="px-2 py-1 text-left">Refund No.</th>
+                  <th className="px-2 py-1 text-center">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {(bill.refunds ?? []).map((r) => {
+                  const isCheque = r.mode === "Cheque";
+                  const isUPI = r.mode === "UPI";
+                  const isBank = r.mode === "BankTransfer";
+
+                  const chequeUpiDate =
+                    isCheque ? r.chequeDate :
+                    isUPI    ? r.upiDate :
+                    isBank   ? r.transferDate :
+                    "";
+
+                  const chequeUpiRef =
+                    isCheque ? r.chequeNumber :
+                    isUPI    ? r.upiId :
+                    isBank   ? r.referenceNo :
+                    "";
+
+                  const bank =
+                    isCheque || isBank ? (r.bankName || r.drawnOn || "") :
+                    isUPI              ? (r.drawnOn || "") :
+                    "";
+
+                  return (
+                    <tr
+                      key={r.id}
+                      className="border-b border-slate-100 last:border-0"
+                    >
+                      <td className="px-2 py-1">{formatToDDMMYYYY(r.date)}</td>
+                      <td className="px-2 py-1 text-right">
+                        ₹ {Number(r.amount).toFixed(2)}
+                      </td>
+                      <td className="px-2 py-1">{r.mode}</td>
+                      <td className="px-2 py-1">
+                        {formatToDDMMYYYY(chequeUpiDate) || "-"}
+                      </td>
+                      <td className="px-2 py-1">{chequeUpiRef || "-"}</td>
+                      <td className="px-2 py-1">{bank || "-"}</td>
+                      <td className="px-2 py-1">{r.referenceNo || "-"}</td>
+                      <td className="px-2 py-1">{r.refundNo || "-"}</td>
+                      <td className="px-2 py-1 text-center space-x-1">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            window.open(
+                              `${API_BASE}/api/refunds/${r.id}/refund-html-pdf`,
+                              "_blank"
+                            )
+                          }
+                          className="px-2 py-0.5 text-[11px] rounded border border-slate-300 hover:bg-slate-50"
+                        >
+                          Download
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const ok = window.confirm(
+                              "Are you sure you want to edit this refund receipt?"
+                            );
+                            if (ok) {
+                              window.location.href = `/refunds/${r.id}/edit`;
+                            }
+                          }}
+                          className="px-2 py-0.5 text-[11px] rounded border border-amber-400 text-amber-700 hover:bg-amber-50"
+                        >
+                          Edit
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div> */}
       <div className="bg-white rounded-lg shadow-sm p-4 text-sm">
         <h4 className="text-sm font-semibold mb-2">Payment History</h4>
         {(bill.payments?.length ?? 0) === 0 ? (
@@ -227,68 +417,110 @@ export default function BillDetail() {
                   <th className="px-2 py-1 text-left">Date</th>
                   <th className="px-2 py-1 text-right">Amount</th>
                   <th className="px-2 py-1 text-left">Mode</th>
+                  <th className="px-2 py-1 text-left">Cheque / UPI Date</th>
+                  <th className="px-2 py-1 text-left">Cheque No. / UPI ID</th>
+                  <th className="px-2 py-1 text-left">Bank</th>
                   <th className="px-2 py-1 text-left">Ref No.</th>
-                  <th className="px-2 py-1 text-left">Drawn on</th>
-                  <th className="px-2 py-1 text-left">Drawn as</th>
                   <th className="px-2 py-1 text-left">Receipt No.</th>
                   <th className="px-2 py-1 text-center">Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {(bill.payments ?? []).map((p) => (
-                  <tr
-                    key={p.id}
-                    className="border-b border-slate-100 last:border-0"
-                  >
-                    <td className="px-2 py-1">
-                      {p.date}
-                    </td>
-                    <td className="px-2 py-1 text-right">
-                      ₹ {Number(p.amount).toFixed(2)}
-                    </td>
-                    <td className="px-2 py-1">{p.mode}</td>
-                    <td className="px-2 py-1">{p.referenceNo || "-"}</td>
-                    <td className="px-2 py-1">{p.drawnOn || "-"}</td>
-                    <td className="px-2 py-1">{p.drawnAs || "-"}</td>
-                    <td className="px-2 py-1">{p.receiptNo || "-"}</td>
-                    <td className="px-2 py-1 text-center space-x-1">
-                      <button
-                        type="button"
-                        onClick={() =>
-                          window.open(
-                            `${API_BASE}/api/payments/${p.id}/receipt-html-pdf`,
-                            "_blank"
-                          )
-                        }
-                        className="px-2 py-0.5 text-[11px] rounded border border-slate-300 hover:bg-slate-50"
-                      >
-                        Download Receipt
-                      </button>
+                {(bill.payments ?? []).map((p) => {
+                  const isCheque = p.mode === "Cheque";
+                  const isUPI = p.mode === "UPI";
+                  const isBank = p.mode === "BankTransfer";
 
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const ok = window.confirm(
-                            "Are you sure you want to edit this payment receipt?"
-                          );
-                          if (ok) {
-                            window.location.href = `/payments/${p.id}/edit`;
+                  // Date column logic
+                  const chequeUpiDate = isCheque
+                    ? p.chequeDate || p.cheque_date || "-"
+                    : isUPI
+                    ? p.upiDate || p.upi_date || "-"
+                    : isBank
+                    ? p.transferDate || p.transfer_date || "-"
+                    : "-";
+
+                  // Cheque No / UPI ID column logic
+                  const chequeUpiRef = isCheque
+                    ? p.chequeNumber || p.cheque_no || p.chequeNum || "-"
+                    : isUPI
+                    ? p.upiId || p.upi_id || "-"
+                    : isBank
+                    ? "-"
+                    : "-";
+
+                  // Bank column logic
+                  const bank =
+                    isCheque || isBank
+                      ? p.bankName || p.bank || p.bank_name || "-"
+                      : isUPI
+                      ? p.drawnOn || p.platform || p.upiPlatform || "-"
+                      : "-";
+
+                  // Ref No column logic
+                  const refNo = isBank
+                    ? p.referenceNo || p.refNo || p.reference_no || "-"
+                    : isCheque
+                    ? p.referenceNo || p.refNo || "-"
+                    : isUPI
+                    ? p.referenceNo || p.refNo || p.transactionId || "-"
+                    : p.referenceNo || "-";
+
+                  return (
+                    <tr
+                      key={p.id}
+                      className="border-b border-slate-100 last:border-0"
+                    >
+                      <td className="px-2 py-1">{formatToDDMMYYYY(p.date)}</td>
+                      <td className="px-2 py-1 text-right">
+                        ₹ {Number(p.amount).toFixed(2)}
+                      </td>
+                      <td className="px-2 py-1">{p.mode}</td>
+                      <td className="px-2 py-1">
+                        {formatToDDMMYYYY(chequeUpiDate)}
+                      </td>
+                      <td className="px-2 py-1">{chequeUpiRef}</td>
+                      <td className="px-2 py-1">{bank}</td>
+                      <td className="px-2 py-1">{refNo}</td>
+                      <td className="px-2 py-1">{p.receiptNo || "-"}</td>
+                      <td className="px-2 py-1 text-center space-x-1">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            window.open(
+                              `${API_BASE}/api/payments/${p.id}/receipt-html-pdf`,
+                              "_blank"
+                            )
                           }
-                        }}
-                        className="px-2 py-0.5 text-[11px] rounded border border-amber-400 text-amber-700 hover:bg-amber-50"
-                      >
-                        Edit Receipt
-                      </button>
-                    </td>
-                  </tr>
-                ))}
+                          className="px-2 py-0.5 text-[11px] rounded border border-slate-300 hover:bg-slate-50"
+                        >
+                          Download
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const ok = window.confirm(
+                              "Are you sure you want to edit this payment receipt?"
+                            );
+                            if (ok) {
+                              window.location.href = `/payments/${p.id}/edit`;
+                            }
+                          }}
+                          className="px-2 py-0.5 text-[11px] rounded border border-amber-400 text-amber-700 hover:bg-amber-50"
+                        >
+                          Edit
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
         )}
       </div>
 
-      {/* Refund history */}
       <div className="bg-white rounded-lg shadow-sm p-4 text-sm">
         <h4 className="text-sm font-semibold mb-2">Refund History</h4>
         {(bill.refunds?.length ?? 0) === 0 ? (
@@ -301,61 +533,104 @@ export default function BillDetail() {
                   <th className="px-2 py-1 text-left">Date</th>
                   <th className="px-2 py-1 text-right">Amount</th>
                   <th className="px-2 py-1 text-left">Mode</th>
+                  <th className="px-2 py-1 text-left">Cheque / UPI Date</th>
+                  <th className="px-2 py-1 text-left">Cheque No. / UPI ID</th>
+                  <th className="px-2 py-1 text-left">Bank</th>
                   <th className="px-2 py-1 text-left">Ref No.</th>
-                  <th className="px-2 py-1 text-left">Drawn on</th>
-                  <th className="px-2 py-1 text-left">Drawn as</th>
                   <th className="px-2 py-1 text-left">Refund No.</th>
                   <th className="px-2 py-1 text-center">Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {(bill.refunds ?? []).map((r) => (
-                  <tr
-                    key={r.id}
-                    className="border-b border-slate-100 last:border-0"
-                  >
-                    <td className="px-2 py-1">
-                      {r.date}
-                    </td>
-                    <td className="px-2 py-1 text-right">
-                      ₹ {Number(r.amount).toFixed(2)}
-                    </td>
-                    <td className="px-2 py-1">{r.mode}</td>
-                    <td className="px-2 py-1">{r.referenceNo || "-"}</td>
-                    <td className="px-2 py-1">{r.drawnOn || "-"}</td>
-                    <td className="px-2 py-1">{r.drawnAs || "-"}</td>
-                    <td className="px-2 py-1">{r.refundNo || "-"}</td>
-                    <td className="px-2 py-1 text-center space-x-1">
-                      <button
-                        type="button"
-                        onClick={() =>
-                          window.open(
-                            `${API_BASE}/api/refunds/${r.id}/refund-html-pdf`,
-                            "_blank"
-                          )
-                        }
-                        className="px-2 py-0.5 text-[11px] rounded border border-slate-300 hover:bg-slate-50"
-                      >
-                        Download Receipt
-                      </button>
+                {(bill.refunds ?? []).map((r) => {
+                  const isCheque = r.mode === "Cheque";
+                  const isUPI = r.mode === "UPI";
+                  const isBank = r.mode === "BankTransfer";
 
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const ok = window.confirm(
-                            "Are you sure you want to edit this refund receipt?"
-                          );
-                          if (ok) {
-                            window.location.href = `/refunds/${r.id}/edit`;
+                  // Date column logic
+                  const chequeUpiDate = isCheque
+                    ? r.chequeDate || r.cheque_date || "-"
+                    : isUPI
+                    ? r.upiDate || r.upi_date || "-"
+                    : isBank
+                    ? r.transferDate || r.transfer_date || "-"
+                    : "-";
+
+                  // Cheque No / UPI ID column logic
+                  const chequeUpiRef = isCheque
+                    ? r.chequeNumber || r.cheque_no || r.chequeNum || "-"
+                    : isUPI
+                    ? r.upiId || r.upi_id || "-"
+                    : isBank
+                    ? "-"
+                    : "-";
+
+                  // Bank column logic
+                  const bank =
+                    isCheque || isBank
+                      ? r.bankName || r.bank || r.bank_name || "-"
+                      : isUPI
+                      ? r.drawnOn || r.platform || r.upiPlatform || "-"
+                      : "-";
+
+                  // Ref No column logic
+                  const refNo = isBank
+                    ? r.referenceNo || r.refNo || r.reference_no || "-"
+                    : isCheque
+                    ? r.referenceNo || r.refNo || "-"
+                    : isUPI
+                    ? r.referenceNo || r.refNo || r.transactionId || "-"
+                    : r.referenceNo || "-";
+
+                  return (
+                    <tr
+                      key={r.id}
+                      className="border-b border-slate-100 last:border-0"
+                    >
+                      <td className="px-2 py-1">{formatToDDMMYYYY(r.date)}</td>
+                      <td className="px-2 py-1 text-right">
+                        ₹ {Number(r.amount).toFixed(2)}
+                      </td>
+                      <td className="px-2 py-1">{r.mode}</td>
+                      <td className="px-2 py-1">
+                        {formatToDDMMYYYY(chequeUpiDate)}
+                      </td>
+                      <td className="px-2 py-1">{chequeUpiRef}</td>
+                      <td className="px-2 py-1">{bank}</td>
+                      <td className="px-2 py-1">{refNo}</td>
+                      <td className="px-2 py-1">{r.refundNo || "-"}</td>
+                      <td className="px-2 py-1 text-center space-x-1">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            window.open(
+                              `${API_BASE}/api/refunds/${r.id}/refund-html-pdf`,
+                              "_blank"
+                            )
                           }
-                        }}
-                        className="px-2 py-0.5 text-[11px] rounded border border-amber-400 text-amber-700 hover:bg-amber-50"
-                      >
-                        Edit Receipt
-                      </button>
-                    </td>
-                  </tr>
-                ))}
+                          className="px-2 py-0.5 text-[11px] rounded border border-slate-300 hover:bg-slate-50"
+                        >
+                          Download
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const ok = window.confirm(
+                              "Are you sure you want to edit this refund receipt?"
+                            );
+                            if (ok) {
+                              window.location.href = `/refunds/${r.id}/edit`;
+                            }
+                          }}
+                          className="px-2 py-0.5 text-[11px] rounded border border-amber-400 text-amber-700 hover:bg-amber-50"
+                        >
+                          Edit
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -366,7 +641,6 @@ export default function BillDetail() {
 }
 
 /* ---------- COMMON RENDERER FOR MODE-SPECIFIC FIELDS ---------- */
-
 function ModeSpecificFields({ form, onChange }) {
   const mode = form.mode;
 
@@ -612,7 +886,6 @@ function ModeSpecificFields({ form, onChange }) {
 }
 
 /* ---------- PENDING PAYMENT FORM ---------- */
-
 function PendingPaymentForm({ billId, pending, onSuccess }) {
   const [form, setForm] = useState({
     amount: pending,
@@ -639,13 +912,23 @@ function PendingPaymentForm({ billId, pending, onSuccess }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    const numericAmount = Number(form.amount);
+    if (numericAmount <= 0) {
+      alert("Payment amount must be > 0");
+      return;
+    }
+    if (numericAmount > Number(pending)) {
+      alert("Payment amount cannot exceed pending balance");
+      return;
+    }
+
     setLoading(true);
 
     try {
       await apiFetch(`/api/bills/${billId}/payments`, {
         method: "POST",
         body: JSON.stringify({
-          amount: Number(form.amount),
+          amount: numericAmount,
           mode: form.mode,
           date: form.paymentDate,
           referenceNo: form.referenceNo,
@@ -742,7 +1025,6 @@ function PendingPaymentForm({ billId, pending, onSuccess }) {
 }
 
 /* ---------- REFUND FORM ---------- */
-
 function RefundForm({ billId, maxRefund, onSuccess }) {
   const [form, setForm] = useState({
     amount: maxRefund,
@@ -873,7 +1155,7 @@ function RefundForm({ billId, maxRefund, onSuccess }) {
       <button
         type="submit"
         disabled={loading}
-        className="mt-2 w-full px-3 py-1.5 rounded-md bg-red-700 text-white text-xs font-medium hover:bg-red-600 disabled:opacity-50"
+        className="mt-2 w-full px-3 py-1.5 rounded-md bg-red-600 text-white text-xs font-medium hover:bg-red-700 disabled:opacity-50"
       >
         {loading ? "Saving..." : "Confirm Refund & Generate Receipt"}
       </button>
