@@ -621,7 +621,7 @@ export default function CreateBill() {
               required
             />
           </div>
-          {/* <div>
+           <div>
             <label className="block text-xs font-medium text-slate-600 mb-1">
               Age
             </label>
@@ -633,7 +633,7 @@ export default function CreateBill() {
               className="w-full border border-slate-300 rounded-md px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-slate-500"
               placeholder="Years"
             />
-          </div> */}
+          </div>
           <div>
             <label className="block text-xs font-medium text-slate-600 mb-1">
               Date
@@ -664,7 +664,7 @@ export default function CreateBill() {
               required
             />
           </div>
-          {/* <div>
+           <div>
             <label className="block text-xs font-medium text-slate-600 mb-1">
               Sex
             </label>
@@ -703,7 +703,7 @@ export default function CreateBill() {
                 <span>Other</span>
               </label>
             </div>
-          </div> */}
+          </div>
         </div>
       </div>
 

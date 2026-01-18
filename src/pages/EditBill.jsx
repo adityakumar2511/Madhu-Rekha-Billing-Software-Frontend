@@ -173,7 +173,7 @@ export default function EditBill() {
               className="w-full border border-slate-300 rounded-md px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-slate-500"
             />
           </div>
-          {/* <div>
+          <div>
             <label className="block text-xs font-medium text-slate-600 mb-1">
               Age
             </label>
@@ -184,7 +184,7 @@ export default function EditBill() {
               onChange={handleFormChange}
               className="w-full border border-slate-300 rounded-md px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-slate-500"
             />
-          </div> */}
+          </div>
           <div>
             <label className="block text-xs font-medium text-slate-600 mb-1">
               Date
@@ -212,7 +212,7 @@ export default function EditBill() {
               className="w-full border border-slate-300 rounded-md px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-slate-500"
             />
           </div>
-          {/* <div>
+          <div>
             <label className="block text-xs font-medium text-slate-600 mb-1">
               Sex
             </label>
@@ -231,7 +231,7 @@ export default function EditBill() {
                 </label>
               ))}
             </div>
-          </div> */}
+          </div>
         </div>
       </div>
 
