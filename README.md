@@ -1,11 +1,8 @@
-<<<<<<< HEAD
 # Madhu Rekha Billing Software - Frontend
-=======
+
 Website live: https://madhu-rekha-billing-software-fronte.vercel.app/
 
 # React + Vite
->>>>>>> b3414b367eb11c18a60b9991a509ac575e0cac97
-
 A React + Vite frontend for the Madhu Rekha Billing Software application. Built with modern React practices and Vite for fast development and optimized builds.
 
 ## Project Structure
